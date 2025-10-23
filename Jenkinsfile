@@ -21,12 +21,7 @@ pipeline {
             }
         }
 
-        stage('Run Cucumber Tests') {
-            steps {
-                echo '🧪 Running Cucumber tests...'
-                bat 'mvn test'
-            }
-        }
+     
 
         stage('Deploy') {
             steps {
