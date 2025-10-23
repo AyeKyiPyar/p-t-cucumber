@@ -30,8 +30,8 @@ pipeline {
                 bat "docker-compose -f ${DOCKER_COMPOSE_FILE} down"
                 // Build images and start containers
                 bat "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
-                // Wait for MySQL to initialize
-                bat "timeout /t 20"
+               // Wait for MySQL to initialize
+                bat 'powershell -Command "Start-Sleep -Seconds 20"'
             }
         }
 
