@@ -10,7 +10,7 @@ LABEL maintainer = "javaguides.net"
 ADD target/player-team-cucumber-0.0.1-SNAPSHOT.jar player-team-cucumber.jar
 
 # Step 4 : Expose the port your application will run on
-EXPOSE 8080
+EXPOSE 7074
 
 # Step 5: Speciry the command to run the application
 ENTRYPOINT ["java", "-jar", "player-team-cucumber.jar"]
