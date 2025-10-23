@@ -8,8 +8,7 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: springonetomany   # Database name matches your Spring Boot config
-      MYSQL_USER: root
-      MYSQL_PASSWORD: root
+     
     ports:
       - "3306:3306"
     volumes:
@@ -21,7 +20,7 @@ services:
       timeout: 10s
       retries: 5
 
-  customer-api:
+  player-team-cucumber:
     build:
       context: ./       # Use Dockerfile in the repo root
       dockerfile: Dockerfile
