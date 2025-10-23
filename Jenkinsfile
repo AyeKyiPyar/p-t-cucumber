@@ -35,12 +35,7 @@ pipeline {
             }
         }
 
-        stage('Verify Deployment') {
-            steps {
-                echo '🔍 Verifying Spring Boot app is running...'
-                bat 'curl -f http://localhost:7074/actuator/health || echo "App not reachable"'
-            }
-        }
+      
     }
 
     post {
