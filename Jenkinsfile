@@ -28,15 +28,15 @@ pipeline {
             }
         }
 
-        stage('Docker Compose Up') {
+        stage('Deploy') {
             steps {
-                echo '🐳 Starting MySQL and Spring Boot app via Docker Compose...'
-                // Stop and remove old containers
+                echo '🚀 Deploying Spring Boot app with MySQL using Docker Compose...'
+                // Stop old containers
                 bat "docker-compose -f ${DOCKER_COMPOSE_FILE} down"
                 // Build images and start containers
                 bat "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
-                // Wait a few seconds for MySQL to initialize
-                bat "timeout /t 15"
+                // Wait for MySQL to initialize
+                bat "timeout /t 20"
             }
         }
 
