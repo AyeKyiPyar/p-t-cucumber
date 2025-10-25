@@ -1,50 +1,39 @@
-version: '3.9'
-
 services:
-  mysql:
+  mysql_db:
     image: mysql:latest
     container_name: mysql_db
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: springonetomany   # Database name matches Spring Boot config
+      MYSQL_DATABASE: springonetomany
     ports:
       - "3306:3306"
-    volumes:
-      - mysqldata:/var/lib/mysql
-      - ./mysql-init:/docker-entrypoint-initdb.d   # Optional SQL scripts
+    networks:
+      - akpsnetwork
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
       interval: 10s
       timeout: 5s
-      retries: 10
-    networks:
-      - akpsnetwork
+      retries: 5
 
-  player-team-cucumber:
-    build:
-      context: ./       # Dockerfile location
-      dockerfile: Dockerfile
+  player-team-cucumber-app:
+    image: player-team-cucumber:latest
     container_name: player-team-cucumber-app
     depends_on:
-      mysql:
+      mysql_db:
         condition: service_healthy
+    ports:
+      - "7074:8080"
+    networks:
+      - akpsnetwork
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://mysql_db:3306/springonetomany
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-    ports:
-      - "7074:8080"
-    restart: on-failure
-    volumes:
-      - ./data/compose-app:/app
-    networks:
-      - akpsnetwork
+      SPRING_JPA_SHOW_SQL: "true"
+      SPRING_DATASOURCE_DRIVER_CLASS_NAME: com.mysql.cj.jdbc.Driver
 
 networks:
   akpsnetwork:
     external: true
-
-volumes:
-  mysqldata:
