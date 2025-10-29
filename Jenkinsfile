@@ -2,11 +2,14 @@ pipeline {
     agent any
 
     environment {
-        REPO_URL = 'https://github.com/AyeKyiPyar/player-team-cucumber.git'
+        REPO_URL = 'https://github.com/AyeKyiPyar/p-t-cucumber.git'
         DOCKER_COMPOSE_FILE = 'docker-compose.yml'
+        APP_CONTAINER = 'player-team-cucumber-app'
+        APP_JAR = 'target/player-team-cucumber-0.0.1-SNAPSHOT.jar'
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 echo '📦 Cloning repository...'
@@ -21,33 +24,63 @@ pipeline {
             }
         }
 
-     
+        stage('Start MySQL for Tests') {
+		    steps {
+		        script {
+		            def mysqlRunning = bat(script: 'docker ps -q -f name=mysql_db', returnStdout: true).trim()
+		            if (mysqlRunning == '') {
+		                echo '🟢 Starting MySQL container...'
+		                bat '''
+		                    docker run -d --name mysql_db ^
+		                    -e MYSQL_ROOT_PASSWORD=root ^
+		                    -e MYSQL_DATABASE=testdb ^
+		                    -p 3306:3306 ^
+		                    mysql:8.0
+		                '''
+		            } else {
+		                echo '✅ MySQL container already running.'
+		            }
+		        }
+		    }
+		}
 
-        stage('Deploy') {
-            steps {
-                echo '🚀 Deploying Spring Boot app with MySQL using Docker Compose...'
-                // Stop old containers
-                bat "docker-compose -f ${DOCKER_COMPOSE_FILE} down"
-                // Build images and start containers
-                bat "docker-compose -f ${DOCKER_COMPOSE_FILE} up -d --build"
-               // Wait for MySQL to initialize
-                bat 'powershell -Command "Start-Sleep -Seconds 20"'
-            }
-        }
 
-      stage('Run Cucumber Tests') {
+        stage('Run Cucumber Tests') {
             steps {
-                echo 'Running Cucumber tests...'
-                // Run tests inside the Jenkins workspace
-                bat 'mvn test -Dcucumber.options="--plugin json:target/cucumber.json"'
+                echo '🧪 Running Cucumber tests outside container...'
+                // Run tests outside the Spring Boot app container
+                 bat 'mvn test -Dcucumber.options="--plugin json:target/cucumber.json"'
             }
         }
 
         stage('Publish Cucumber Results') {
             steps {
-                cucumber buildStatus: 'UNSTABLE', jsonReportDirectory: 'target', fileIncludePattern: 'cucumber.json'
+                echo '📊 Publishing Cucumber results...'
+                // Use HTML publisher instead of 'cucumber' step
+                publishHTML(target: [
+                    reportDir: 'target/cucumber-reports',
+                    reportFiles: 'cucumber.json',
+                    reportName: 'Cucumber Test Report',
+                    allowMissing: true,
+                    alwaysLinkToLastBuild: true,
+                    keepAll: true
+                ])
             }
         }
+
+        stage('Build & Deploy App') {
+            steps {
+                echo '🚀 Deploying Spring Boot app with network...'
+                bat 'docker build -t player-team-cucumber:v1.1 .'
+                bat 'powershell -Command "Start-Sleep -Seconds 20"' // wait for services
+            }
+        }
+        stage('Run Spring App Container')
+        	steps{
+				echo ' Run Container......'
+				bat 'docker run --name player-team-cucumber-container --network akpsnetwork -it -p 8082:8080 player-team-cucumber:v1.1'
+				bat 'powershell -Command "Start-Sleep -Seconds 20"' // wait for services
+			}
     }
 
     post {
