@@ -73,7 +73,7 @@ pipeline {
                     // Ensure network exists
                     bat "docker network inspect %MYSQL_NETWORK% || docker network create %MYSQL_NETWORK%"
 
-                    // Remove old container if exists
+                    echo ' Remove old container if exists...'
                     bat '''
                         docker ps -a --format "{{.Names}}" | findstr /C:"%APP_CONTAINER%" >nul
                         if %errorlevel%==0 (
@@ -83,7 +83,7 @@ pipeline {
                         )
                     '''
 
-                    // Run new container detached
+                    echo ' Run new container detached...'
                     bat '''
                         docker run -d --name %APP_CONTAINER% ^
                         --network %MYSQL_NETWORK% ^
