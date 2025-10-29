@@ -75,7 +75,7 @@ pipeline {
                 bat 'powershell -Command "Start-Sleep -Seconds 20"' // wait for services
             }
         }
-        stage('Run Spring App Container')
+        stage('Run Spring App Container'){
         	steps{
 				echo ' Run Container......'
 				bat 'docker run --name player-team-cucumber-container --network akpsnetwork -it -p 8082:8080 player-team-cucumber:v1.1'
