@@ -82,8 +82,6 @@ pipeline {
                             docker rm %APP_CONTAINER%
                         )
                     '''
-
-                    echo ' Run new container detached...'
                    echo '🚀 Run new container detached...'
                     bat """
                         docker run -d --name %APP_CONTAINER% --network %MYSQL_NETWORK% -p %APP_PORT%:8080 %APP_IMAGE%
