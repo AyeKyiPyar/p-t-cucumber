@@ -5,7 +5,7 @@ pipeline {
         REPO_URL = 'https://github.com/AyeKyiPyar/p-t-cucumber.git'
         APP_IMAGE = 'player-team-cucumber:v1.1'
         APP_CONTAINER = 'player-team-cucumber-container'
-        APP_PORT = '8082'
+        APP_PORT = '8083'
         MYSQL_CONTAINER = 'mysql_db'
         MYSQL_NETWORK = 'akpsnetwork'
     }
