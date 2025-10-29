@@ -56,19 +56,7 @@ pipeline {
             }
         }
 
-        stage('Publish Cucumber Results') {
-            steps {
-                echo '📊 Publishing Cucumber results...'
-                publishHTML(target: [
-                    reportDir: 'target/cucumber-reports',
-                    reportFiles: 'cucumber.json',
-                    reportName: 'Cucumber Test Report',
-                    allowMissing: true,
-                    alwaysLinkToLastBuild: true,
-                    keepAll: true
-                ])
-            }
-        }
+        
 
         stage('Build Docker Image') {
             steps {
