@@ -3,9 +3,11 @@ pipeline {
 
     environment {
         REPO_URL = 'https://github.com/AyeKyiPyar/p-t-cucumber.git'
-        DOCKER_COMPOSE_FILE = 'docker-compose.yml'
-        APP_CONTAINER = 'player-team-cucumber-app'
-        APP_JAR = 'target/player-team-cucumber-0.0.1-SNAPSHOT.jar'
+        APP_IMAGE = 'player-team-cucumber:v1.1'
+        APP_CONTAINER = 'player-team-cucumber-container'
+        APP_PORT = '8082'
+        MYSQL_CONTAINER = 'mysql_db'
+        MYSQL_NETWORK = 'akpsnetwork'
     }
 
     stages {
@@ -25,38 +27,38 @@ pipeline {
         }
 
         stage('Start MySQL for Tests') {
-		    steps {
-		        script {
-		            def mysqlRunning = bat(script: 'docker ps -q -f name=mysql_db', returnStdout: true).trim()
-		            if (mysqlRunning == '') {
-		                echo '🟢 Starting MySQL container...'
-		                bat '''
-		                    docker run -d --name mysql_db ^
-		                    -e MYSQL_ROOT_PASSWORD=root ^
-		                    -e MYSQL_DATABASE=testdb ^
-		                    -p 3306:3306 ^
-		                    mysql:8.0
-		                '''
-		            } else {
-		                echo '✅ MySQL container already running.'
-		            }
-		        }
-		    }
-		}
-
+            steps {
+                script {
+                    def mysqlRunning = bat(script: "docker ps -q -f name=%MYSQL_CONTAINER%", returnStdout: true).trim()
+                    if (mysqlRunning == '') {
+                        echo '🟢 Starting MySQL container...'
+                        // Ensure network exists
+                        bat "docker network inspect %MYSQL_NETWORK% || docker network create %MYSQL_NETWORK%"
+                        bat '''
+                            docker run -d --name mysql_db ^
+                            --network akpsnetwork ^
+                            -e MYSQL_ROOT_PASSWORD=root ^
+                            -e MYSQL_DATABASE=testdb ^
+                            -p 3306:3306 ^
+                            mysql:8.0
+                        '''
+                    } else {
+                        echo '✅ MySQL container already running.'
+                    }
+                }
+            }
+        }
 
         stage('Run Cucumber Tests') {
             steps {
-                echo '🧪 Running Cucumber tests outside container...'
-                // Run tests outside the Spring Boot app container
-                 bat 'mvn test -Dcucumber.options="--plugin json:target/cucumber.json"'
+                echo '🧪 Running Cucumber tests...'
+                bat 'mvn test -Dcucumber.options="--plugin json:target/cucumber.json"'
             }
         }
 
         stage('Publish Cucumber Results') {
             steps {
                 echo '📊 Publishing Cucumber results...'
-                // Use HTML publisher instead of 'cucumber' step
                 publishHTML(target: [
                     reportDir: 'target/cucumber-reports',
                     reportFiles: 'cucumber.json',
@@ -68,19 +70,42 @@ pipeline {
             }
         }
 
-        stage('Build & Deploy App') {
+        stage('Build Docker Image') {
             steps {
-                echo '🚀 Deploying Spring Boot app with network...'
-                bat 'docker build -t player-team-cucumber:v1.1 .'
-                bat 'powershell -Command "Start-Sleep -Seconds 20"' // wait for services
+                echo '🐳 Building Spring Boot Docker image...'
+                bat "docker build -t %APP_IMAGE% ."
             }
         }
-        stage('Run Spring App Container'){
-        	steps{
-				echo ' Run Container......'
-				bat 'docker run --name player-team-cucumber-container --network akpsnetwork -it -p 8082:8080 player-team-cucumber:v1.1'
-				bat 'powershell -Command "Start-Sleep -Seconds 20"' // wait for services
-			}
+
+        stage('Deploy Spring Boot Container') {
+            steps {
+                script {
+                    echo '🚀 Deploying Spring Boot app...'
+
+                    // Ensure network exists
+                    bat "docker network inspect %MYSQL_NETWORK% || docker network create %MYSQL_NETWORK%"
+
+                    // Remove old container if exists
+                    bat '''
+                        docker ps -a --format "{{.Names}}" | findstr /C:"%APP_CONTAINER%" >nul
+                        if %errorlevel%==0 (
+                            echo "🧹 Removing old container..."
+                            docker stop %APP_CONTAINER%
+                            docker rm %APP_CONTAINER%
+                        )
+                    '''
+
+                    // Run new container detached
+                    bat '''
+                        docker run -d --name %APP_CONTAINER% ^
+                        --network %MYSQL_NETWORK% ^
+                        -p %APP_PORT%:8080 ^
+                        %APP_IMAGE%
+                    '''
+                    bat 'powershell -Command "Start-Sleep -Seconds 20"'
+                }
+            }
+        }
     }
 
     post {
@@ -89,7 +114,7 @@ pipeline {
             bat 'docker ps -a'
         }
         success {
-            echo "🎉 Pipeline succeeded! App running at http://localhost:7074/"
+            echo "🎉 Pipeline succeeded! App running at http://localhost:%APP_PORT%/"
         }
         failure {
             echo '❌ Pipeline failed. Check logs above.'
