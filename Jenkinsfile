@@ -70,18 +70,6 @@ pipeline {
                 script {
                     echo '🚀 Deploying Spring Boot app...'
 
-                    // Ensure network exists
-                    bat "docker network inspect %MYSQL_NETWORK% || docker network create %MYSQL_NETWORK%"
-
-                    echo ' Remove old container if exists...'
-                    bat '''
-                        docker ps -a --format "{{.Names}}" | findstr /C:"%APP_CONTAINER%" >nul
-                        if %errorlevel%==0 (
-                            echo "🧹 Removing old container..."
-                            docker stop %APP_CONTAINER%
-                            docker rm %APP_CONTAINER%
-                        )
-                    '''
                    echo '🚀 Run new container detached...'
                     bat """
                         docker run -d --name %APP_CONTAINER% --network %MYSQL_NETWORK% -p %APP_PORT%:8080 %APP_IMAGE%
