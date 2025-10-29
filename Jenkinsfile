@@ -84,12 +84,10 @@ pipeline {
                     '''
 
                     echo ' Run new container detached...'
-                    bat '''
-                        docker run -d --name %APP_CONTAINER% ^
-                        --network %MYSQL_NETWORK% ^
-                        -p %APP_PORT%:8080 ^
-                        %APP_IMAGE%
-                    '''
+                   echo '🚀 Run new container detached...'
+                    bat """
+                        docker run -d --name %APP_CONTAINER% --network %MYSQL_NETWORK% -p %APP_PORT%:8080 %APP_IMAGE%
+                    """
                     bat 'powershell -Command "Start-Sleep -Seconds 20"'
                 }
             }
